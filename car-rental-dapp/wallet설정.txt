@@ -1,0 +1,2 @@
+https://sepolia-faucet.pk910.de/#/mine/c34130de-5960-4c93-b6bd-709ebbaf73e1
+metamask에서 지갑 만든 후 위 주소로 들어가 테스트 sepoliaETH채굴가능
