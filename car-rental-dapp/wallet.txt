@@ -1,1 +1,4 @@
 very junk brick vicious emerge raise gift write stone twin false vicious
+
+// 관리자 계정 지갑 주소 
+0x98cc11404C03372f392f225E800dBe015856f536

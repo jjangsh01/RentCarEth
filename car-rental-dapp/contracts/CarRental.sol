@@ -21,6 +21,16 @@ contract CarRental {
     IKYCManager public immutable kycManager;
     IRentalVault public immutable vault;
 
+    struct RentalInfo {
+        string plateNumber;
+        address renter;
+        uint256 amountPaid;
+        uint256 timestamp;
+        bool returned;
+    }
+
+    mapping(bytes32 => RentalInfo) public rentals;
+
     /// @notice Mapping of car ID (hash) to deposited amount (for refund)
     mapping(bytes32 => uint256) public deposits;
 
@@ -63,6 +73,14 @@ contract CarRental {
         carRegistry.setCarRented(plateNumber, msg.sender);
         vault.deposit{value: msg.value}();
 
+        rentals[carId] = RentalInfo({
+            plateNumber: plateNumber,
+            renter: msg.sender,
+            amountPaid: msg.value,
+            timestamp: block.timestamp,
+            returned: false
+        });        
+
         emit CarRented(plateNumber, msg.sender);
     }
 
@@ -92,6 +110,8 @@ contract CarRental {
         deposits[carId] = 0;
         vault.refund(renter, deposit);
 
+        rentals[carId].returned = true;
+
         emit CarReturned(plateNumber, renter);
     }
 
@@ -103,6 +123,17 @@ contract CarRental {
     function getDeposit(string memory plateNumber) external view returns (uint256) {
         bytes32 carId = keccak256(abi.encodePacked(plateNumber));
         return deposits[carId];
+    }
+
+    function getRentalInfo(string memory plateNumber) external view returns (
+        address renter,
+        uint256 amountPaid,
+        uint256 timestamp,
+        bool returned
+    ) {
+        bytes32 carId = keccak256(abi.encodePacked(plateNumber));
+        RentalInfo memory info = rentals[carId];
+        return (info.renter, info.amountPaid, info.timestamp, info.returned);
     }
 
     /// @notice Event emitted when a car is rented
