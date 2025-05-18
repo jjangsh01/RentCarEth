@@ -1,10 +1,10 @@
 // /src/App.jsx
+import React from "react";
 import AddCarForm from "./components/AddCarForm";
-import useWeb3 from "./hooks/web3.js";
+import AdminCarManagement from "./components/AdminCarManagement";
+import useWeb3 from "./hooks/useWeb3.js";
 import KYCStatus from "./components/KYCStatus.jsx";
 import CarList from "./components/CarList.jsx";
-import RentForm from "./components/RentForm.jsx";
-import AdminKYCPanel from "./components/AdminPanel.jsx";
 
 function App() {
   const { signer, account, isKYCApproved, isAdmin, loading } = useWeb3();
@@ -20,16 +20,11 @@ function App() {
       <KYCStatus signer={signer} account={account} />
       <CarList signer={signer} />
 
-      {isKYCApproved ? (
-        <RentForm signer={signer} />
-      ) : (
-        <p>❗ KYC 인증 후 차량 대여가 가능합니다.</p>
-      )}
-
       {isAdmin && (
         <>
-          <AdminKYCPanel signer={signer} />
+          <h2>👑 관리자 전용</h2>
           <AddCarForm signer={signer} account={account} />
+          <AdminCarManagement signer={signer} />
         </>
       )}
     </div>
@@ -37,6 +32,10 @@ function App() {
 }
 
 export default App;
+
+
+
+
 
 
 

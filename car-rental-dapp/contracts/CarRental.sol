@@ -21,8 +21,8 @@ contract CarRental {
     IKYCManager public immutable kycManager;
     IRentalVault public immutable vault;
 
-    /// @notice Mapping of carId to deposited amount (for refund)
-    mapping(uint256 => uint256) public deposits;
+    /// @notice Mapping of car ID (hash) to deposited amount (for refund)
+    mapping(bytes32 => uint256) public deposits;
 
     constructor(
         address _carRegistry,
@@ -36,59 +36,82 @@ contract CarRental {
 
     /**
      * @notice Rent a car if KYC verified and car is available
-     * @param carId ID of the car to rent
+     * @param plateNumber Plate number of the car to rent
      */
-    function rentCar(uint256 carId) external payable {
+    function rentCar(string memory plateNumber) external payable {
         require(kycManager.checkKYC(msg.sender), "KYC not approved");
 
+        // 🔑 해시로 ID 변환하여 사용
+        bytes32 carId = keccak256(abi.encodePacked(plateNumber));
+
+        // ✅ 차량 조회
         (
-            , // id
+            string memory carPlate,
             , // model
             , // location
             uint256 pricePerDay,
             uint8 status,
-            
-        ) = carRegistry.getCar(carId);
+            address renter
+        ) = carRegistry.getCar(plateNumber);
 
+        require(bytes(carPlate).length != 0, "Car not found");
         require(status == uint8(ICarRegistry.CarStatus.Available), "Car is not available");
         require(msg.value >= pricePerDay, "Insufficient payment");
 
         deposits[carId] = msg.value;
 
-        carRegistry.setCarRented(carId, msg.sender);
+        carRegistry.setCarRented(plateNumber, msg.sender);
         vault.deposit{value: msg.value}();
+
+        emit CarRented(plateNumber, msg.sender);
     }
 
     /**
      * @notice Complete a rental and refund deposit to renter
-     * @param carId ID of the car being returned
+     * @param plateNumber Plate number of the car being returned
      */
-    function completeRental(uint256 carId) external {
+    function completeRental(string memory plateNumber) external {
+        bytes32 carId = keccak256(abi.encodePacked(plateNumber));
+
         (
-            , // id
+            string memory carPlate,
             , // model
             , // location
             , // pricePerDay
             uint8 status,
             address renter
-        ) = carRegistry.getCar(carId);
+        ) = carRegistry.getCar(plateNumber);
 
+        require(bytes(carPlate).length != 0, "Car not found");
         require(status == uint8(ICarRegistry.CarStatus.Rented), "Car is not currently rented");
+        require(renter == msg.sender, "You are not the renter");
 
-        carRegistry.setCarAvailable(carId);
+        carRegistry.setCarAvailable(plateNumber);
 
         uint256 deposit = deposits[carId];
         deposits[carId] = 0;
         vault.refund(renter, deposit);
+
+        emit CarReturned(plateNumber, renter);
     }
 
     /**
      * @notice View deposit amount for a given car
-     * @param carId ID of the car
+     * @param plateNumber Plate number of the car
      * @return Amount in wei
      */
-    function getDeposit(uint256 carId) external view returns (uint256) {
+    function getDeposit(string memory plateNumber) external view returns (uint256) {
+        bytes32 carId = keccak256(abi.encodePacked(plateNumber));
         return deposits[carId];
     }
+
+    /// @notice Event emitted when a car is rented
+    event CarRented(string plateNumber, address renter);
+
+    /// @notice Event emitted when a car is returned
+    event CarReturned(string plateNumber, address renter);
 }
+
+
+
 
