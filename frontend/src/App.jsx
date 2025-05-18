@@ -57,13 +57,11 @@ function App() {
       </div>
     );
   }
-
-  if (isAdmin) {
+  if (isAdmin && signer) {
     return (
       <div>
         <h1>👑 관리자 화면</h1>
         <p>🧾 주소: {inputAddress}</p>
-        <p>⚠️ MetaMask 연결 시에만 등록/삭제 동작 가능</p>
         <AddCarForm signer={signer} />
         <AdminCarManagement signer={signer} />
       </div>
@@ -92,13 +90,15 @@ function App() {
     );
   }
 
-  return (
-    <div>
-      <h1>🚘 렌트카 사용자 화면</h1>
-      <p>🧾 주소: {inputAddress}</p>
-      <CarList signer={signer} />
-    </div>
-  );
+  if (isAdmin && signer) {
+    return (
+      <div>
+        <h1>👑 관리자</h1>
+        <AddCarForm signer={signer} />
+        <AdminCarManagement signer={signer} />
+      </div>
+    );
+  }
 }
 
 export default App;

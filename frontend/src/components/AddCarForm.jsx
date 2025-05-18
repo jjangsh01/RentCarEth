@@ -17,11 +17,19 @@ const AddCarForm = ({ signer }) => {
   );
 
   const addCar = async () => {
-    try {
-      setMsg("⏳ 차량 등록 중...");
-      const price = ethers.parseEther(pricePerDay); // 요금 변환
+    if (!signer) {
+      setMsg("❗ MetaMask가 연결되지 않았습니다.");
+      return;
+    }
 
-      // 📝 인자 순서: 번호판, 모델명, 위치, 요금
+    try {
+      const price = ethers.parseEther(pricePerDay);
+      const contract = new ethers.Contract(
+        import.meta.env.VITE_CONTRACT_REGISTRY,
+        CarRegistryABI.abi,
+        signer
+      );
+
       await contract.addCar(plateNumber, model, location, price);
       setMsg("✅ 차량 등록 완료");
     } catch (err) {

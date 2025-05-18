@@ -27,7 +27,7 @@ const KYCRequestMetaMask = ({ signer, account }) => {
     <div>
       <h3>📜 KYC 신청</h3>
       <p>연결된 주소: {account}</p>
-      <button onClick={requestKYC}>📨 KYC 인증 요청</button>
+      <button onClick={requestKYC}>📨 KYC 인증 요청</button>    
       {msg && <p>{msg}</p>}
     </div>
   );
