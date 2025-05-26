@@ -1,3 +1,4 @@
+// src/components/ KYCStatusLite.jsx
 const KYCStatusLite = ({ onMetaMaskConnect }) => {
   return (
     <div>

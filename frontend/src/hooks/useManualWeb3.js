@@ -1,3 +1,4 @@
+// src/hooks/useManualWeb3.js
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import KYCManagerABI from "../abi/KYCManager.json";
@@ -13,7 +14,7 @@ const useManualWeb3 = (inputAddress, trigger) => {
       setValidAddress(false);
       return;
     }
-
+    
     const check = async () => {
       setLoading(true);
       try {
@@ -45,4 +46,4 @@ const useManualWeb3 = (inputAddress, trigger) => {
   return { isKYCApproved, isAdmin, validAddress, loading };
 };
 
-export default useManualWeb3;
+export default useManualWeb3;   

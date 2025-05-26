@@ -13,28 +13,31 @@ const KYCStatus = ({ signer, account }) => {
     signer
   );
 
+  const checkStatus = async () => {
+    try {
+      const status = await contract.checkKYC(account);
+      setIsApproved(status);
+      console.log("✅ KYC 상태 확인:", status);
+    } catch (error) {
+      console.error("❌ KYC 상태 확인 오류:", error);
+      setMsg("KYC 상태 확인 실패: " + (error.reason || error.message));
+    }
+  };
+
   useEffect(() => {
-    const check = async () => {
-      try {
-        const status = await contract.checkKYC(account);
-        setIsApproved(status);
-        console.log("✅ KYC 상태 확인:", status);
-      } catch (error) {
-        console.error("❌ KYC 상태 확인 오류:", error);
-        setMsg("KYC 상태 확인 실패: " + (error.reason || error.message));
-      }
-    };
-    check();
+    if (account) checkStatus();
   }, [account]);
 
-  // ✅ KYC 신청 함수
   const requestKYC = async () => {
     try {
       setMsg("⏳ KYC 신청 중...");
       const tx = await contract.requestKYC();
       await tx.wait();
-      setIsApproved(true);
+
       setMsg("✅ KYC 신청 완료");
+
+      // ✅ 신청 후 상태 즉시 확인
+      await checkStatus();
     } catch (error) {
       console.error("❌ KYC 신청 실패:", error);
       setMsg("KYC 신청 실패: " + (error.reason || error.message));
@@ -58,4 +61,5 @@ const KYCStatus = ({ signer, account }) => {
 };
 
 export default KYCStatus;
+
 

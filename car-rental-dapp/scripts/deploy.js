@@ -1,4 +1,4 @@
-// car-rental-dapp/scripts/deploy.js
+// scripts/deploy.js
 const { ethers } = require("hardhat");
 const fs = require("fs");
 const path = require("path");
@@ -50,10 +50,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("🚀 배포자 주소:", deployer.address);
 
-  const adminAddress = process.env.ADMIN_ADDRESS || deployer.address;
-  console.log("👑 관리자 주소:", adminAddress);
-
-  // CarRegistry 배포
+  // ✅ CarRegistry 배포 (관리자 없이)
   const CarRegistry = await ethers.getContractFactory("CarRegistry");
   const carRegistry = await CarRegistry.deploy();
   await carRegistry.waitForDeployment();
@@ -61,15 +58,15 @@ async function main() {
   await updateEnv("VITE_CONTRACT_REGISTRY", carRegistry.target);
   await saveAbi("CarRegistry");
 
-  // KYCManager 배포
+  // ✅ KYCManager 배포 (admin은 여전히 필요)
   const KYCManager = await ethers.getContractFactory("KYCManager");
-  const kycManager = await KYCManager.deploy(adminAddress);
+  const kycManager = await KYCManager.deploy(deployer.address);
   await kycManager.waitForDeployment();
   console.log("🔐 KYCManager 배포 완료:", kycManager.target);
   await updateEnv("VITE_CONTRACT_KYC", kycManager.target);
   await saveAbi("KYCManager");
 
-  // RentalVault 배포
+  // ✅ RentalVault 배포
   const RentalVault = await ethers.getContractFactory("RentalVault");
   const rentalVault = await RentalVault.deploy();
   await rentalVault.waitForDeployment();
@@ -77,7 +74,7 @@ async function main() {
   await updateEnv("VITE_CONTRACT_VAULT", rentalVault.target);
   await saveAbi("RentalVault");
 
-  // CarRental 배포
+  // ✅ CarRental 배포
   const CarRental = await ethers.getContractFactory("CarRental");
   const carRental = await CarRental.deploy(
     carRegistry.target,
@@ -89,7 +86,7 @@ async function main() {
   await updateEnv("VITE_CONTRACT_RENTAL", carRental.target);
   await saveAbi("CarRental");
 
-  // RentalVault와 CarRental 연결
+  // 🔗 RentalVault 연결
   try {
     const tx = await rentalVault.setRentalContract(carRental.target);
     await tx.wait();
@@ -103,6 +100,7 @@ main().catch((error) => {
   console.error("🚨 배포 중 오류:", error);
   process.exitCode = 1;
 });
+
 
 
 

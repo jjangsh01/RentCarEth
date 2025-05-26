@@ -1,13 +1,14 @@
-// src/components/CarList.jsx 
+// src/components/CarList.jsx
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import CarRegistryABI from "../abi/CarRegistry.json";
 import CarRentalABI from "../abi/CarRental.json";
 
-const CarList = ({ signer }) => {
+const CarList = ({ signer, account }) => {
   const [cars, setCars] = useState([]);
   const [msg, setMsg] = useState("");
   const [selectedRental, setSelectedRental] = useState(null);
+  
 
   const statusMap = {
     0: "🟢 사용 가능",
@@ -34,23 +35,24 @@ const CarList = ({ signer }) => {
         const carList = [];
 
         for (const plateNumber of plateNumbers) {
-          const [
-            plate,
-            model,
-            location,
-            pricePerDay,
-            status,
-            renter
-          ] = await registryContract.getCar(plateNumber);
+          const [plate, model, location, pricePerDay, status, renter, owner] =
+            await registryContract.getCar(plateNumber);
 
-          carList.push({
-            id: plate,
-            model,
-            location,
-            pricePerDay: ethers.formatEther(pricePerDay),
-            status: Number(status),
-            renter: renter.toLowerCase(),
-          });
+          const isMyCar = owner.toLowerCase() === account.toLowerCase();
+          const isAvailable = Number(status) === 0;
+
+          // ✅ 필터: 내가 등록하지 않은 + 사용 가능한 차량만 포함
+          if (!isMyCar && isAvailable) {
+            carList.push({
+              id: plate,
+              model,
+              location,
+              pricePerDay: ethers.formatEther(pricePerDay),
+              status: Number(status),
+              renter: renter.toLowerCase(),
+              owner: owner.toLowerCase(),
+            });
+          }
         }
 
         setCars(carList);
@@ -71,6 +73,10 @@ const CarList = ({ signer }) => {
       const tx = await rentalContract.rentCar(plateNumber, { value: rentFee });
       await tx.wait();
       setMsg("✅ 차량 대여 완료!");
+
+      // 상태 다시 로드
+      const updatedCars = cars.filter((car) => car.id !== plateNumber);
+      setCars(updatedCars);
     } catch (error) {
       console.error("❌ 대여 실패:", error);
       setMsg(`❌ 대여 실패: ${error.message}`);
@@ -83,8 +89,6 @@ const CarList = ({ signer }) => {
       const tx = await rentalContract.completeRental(plateNumber);
       await tx.wait();
       setMsg("✅ 차량 반납 완료!");
-
-      // 🔁 반납 완료 후 계약 정보 갱신
       await showRentalInfo(plateNumber);
     } catch (error) {
       console.error("❌ 반납 실패:", error);
@@ -117,47 +121,55 @@ const CarList = ({ signer }) => {
     }
   };
 
-  return (
-    <div>
-      <h2>🚘 차량 목록</h2>
-      {msg && <p>{msg}</p>}
-      {cars.length === 0 ? (
-        <p>등록된 차량이 없습니다.</p>
-      ) : (
-        <ul>
-          {cars.map((car) => (
-            <li key={car.id} style={{ marginBottom: "15px" }}>
-              <strong>{car.model}</strong> - 번호판: {car.id} ({car.location})<br />
-              💰 {car.pricePerDay} ETH<br />
-              📦 상태: {statusMap[car.status]}<br />
-              {car.status === 0 ? (
-                <button onClick={() => rentCar(car.id, car.pricePerDay)}>🚗 대여하기</button>
-              ) : car.status === 1 && car.renter === signer.address.toLowerCase() ? (
-                <button onClick={() => returnCar(car.id)}>🔁 반납하기</button>
-              ) : (
-                <span>⛔ 반납 불가</span>
-              )}
-              <br />
-              {/* 계약 내역 버튼은 대여된 차량에만 표시 */}
-              {car.renter !== "0x0000000000000000000000000000000000000000" && (
-                <button onClick={() => showRentalInfo(car.id)}>📜 계약 내역 보기</button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      {selectedRental && (
-        <div style={{ marginTop: "20px", padding: "10px", border: "1px solid #aaa" }}>
-          <h3>📜 계약 내역</h3>
-          <p>📍 차량: {selectedRental.plateNumber}</p>
-          <p>👤 대여자: {selectedRental.renter}</p>
-          <p>💰 지불 금액: {selectedRental.amount} ETH</p>
-          <p>📅 대여일시: {selectedRental.date}</p>
-          <p>📦 상태: {selectedRental.returned ? "✅ 반납 완료" : "⏳ 대여 중"}</p>
-        </div>
-      )}
-    </div>
-  );
+return (
+  <div>
+    <h2 className="text-xl font-semibold text-white mb-4">🚘 렌트 가능한 차량</h2>
+
+    {msg && <p className="text-sm text-purple-200 mb-2">{msg}</p>}
+
+    {cars.length === 0 ? (
+      <p className="text-sm text-gray-300">📭 현재 대여 가능한 차량이 없습니다.</p>
+    ) : (
+      <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+        {cars.map((car) => (
+          <div key={car.id} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 shadow-md animate-fade-in-up">
+            {/* 이미지 */}
+            <img
+              src={`https://source.unsplash.com/400x240/?car,${car.model}`}
+              alt={car.model}
+              className="rounded-xl mb-3 w-full h-40 object-cover shadow"
+            />
+
+            {/* 정보 */}
+            <div className="text-white space-y-1 mb-4">
+              <h3 className="text-lg font-bold">{car.model}</h3>
+              <p className="text-sm text-gray-300">📍 {car.location}</p>
+              <p className="text-sm text-gray-300">💰 {car.pricePerDay} ETH</p>
+              <p className="text-sm">{statusMap[car.status]}</p>
+            </div>
+
+            {/* 버튼 */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => rentCar(car.id, car.pricePerDay)}
+                className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition text-sm"
+              >
+                대여하기
+              </button>
+              
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {selectedRental && (
+      <div className="mt-6">
+        <RentalInfoModal rental={selectedRental} onClose={() => setSelectedRental(null)} />
+      </div>
+    )}
+  </div>
+);
 };
 
 export default CarList;

@@ -12,27 +12,23 @@ interface IRentalVault {
     function refund(address to, uint256 amount) external;
 }
 
-/**
- * @title CarRental
- * @notice Handles rental logic: user verification, car booking, payment, and refund.
- */
 contract CarRental {
     ICarRegistry public immutable carRegistry;
     IKYCManager public immutable kycManager;
     IRentalVault public immutable vault;
 
+    mapping(bytes32 => uint256) public deposits;
+
+    // 새롭게 추가된 구조체
     struct RentalInfo {
-        string plateNumber;
         address renter;
         uint256 amountPaid;
         uint256 timestamp;
         bool returned;
     }
 
-    mapping(bytes32 => RentalInfo) public rentals;
-
-    /// @notice Mapping of car ID (hash) to deposited amount (for refund)
-    mapping(bytes32 => uint256) public deposits;
+    // 차량 번호판 → 렌탈정보 매핑
+    mapping(string => RentalInfo) public rentalRecords;
 
     constructor(
         address _carRegistry,
@@ -44,24 +40,19 @@ contract CarRental {
         vault = IRentalVault(_vault);
     }
 
-    /**
-     * @notice Rent a car if KYC verified and car is available
-     * @param plateNumber Plate number of the car to rent
-     */
     function rentCar(string memory plateNumber) external payable {
         require(kycManager.checkKYC(msg.sender), "KYC not approved");
 
-        // 🔑 해시로 ID 변환하여 사용
         bytes32 carId = keccak256(abi.encodePacked(plateNumber));
 
-        // ✅ 차량 조회
         (
             string memory carPlate,
             , // model
             , // location
             uint256 pricePerDay,
             uint8 status,
-            address renter
+            address renter,
+            address owner
         ) = carRegistry.getCar(plateNumber);
 
         require(bytes(carPlate).length != 0, "Car not found");
@@ -70,34 +61,29 @@ contract CarRental {
 
         deposits[carId] = msg.value;
 
-        carRegistry.setCarRented(plateNumber, msg.sender);
-        vault.deposit{value: msg.value}();
-
-        rentals[carId] = RentalInfo({
-            plateNumber: plateNumber,
+        // 렌탈 정보 기록
+        rentalRecords[plateNumber] = RentalInfo({
             renter: msg.sender,
             amountPaid: msg.value,
             timestamp: block.timestamp,
             returned: false
-        });        
+        });
+
+        carRegistry.setCarRented(plateNumber, msg.sender);
+        vault.deposit{value: msg.value}();
 
         emit CarRented(plateNumber, msg.sender);
     }
 
-    /**
-     * @notice Complete a rental and refund deposit to renter
-     * @param plateNumber Plate number of the car being returned
-     */
     function completeRental(string memory plateNumber) external {
         bytes32 carId = keccak256(abi.encodePacked(plateNumber));
 
         (
             string memory carPlate,
-            , // model
-            , // location
-            , // pricePerDay
+            , , , // model, location, pricePerDay
             uint8 status,
-            address renter
+            address renter,
+            address owner
         ) = carRegistry.getCar(plateNumber);
 
         require(bytes(carPlate).length != 0, "Car not found");
@@ -110,38 +96,32 @@ contract CarRental {
         deposits[carId] = 0;
         vault.refund(renter, deposit);
 
-        rentals[carId].returned = true;
+        // 상태 업데이트
+        rentalRecords[plateNumber].returned = true;
 
         emit CarReturned(plateNumber, renter);
     }
 
-    /**
-     * @notice View deposit amount for a given car
-     * @param plateNumber Plate number of the car
-     * @return Amount in wei
-     */
     function getDeposit(string memory plateNumber) external view returns (uint256) {
         bytes32 carId = keccak256(abi.encodePacked(plateNumber));
         return deposits[carId];
     }
 
-    function getRentalInfo(string memory plateNumber) external view returns (
-        address renter,
-        uint256 amountPaid,
-        uint256 timestamp,
-        bool returned
-    ) {
-        bytes32 carId = keccak256(abi.encodePacked(plateNumber));
-        RentalInfo memory info = rentals[carId];
+    // 조회 함수
+    function getRentalInfo(string memory plateNumber)
+        external
+        view
+        returns (address renter, uint256 amountPaid, uint256 timestamp, bool returned)
+    {
+        RentalInfo memory info = rentalRecords[plateNumber];
         return (info.renter, info.amountPaid, info.timestamp, info.returned);
     }
 
-    /// @notice Event emitted when a car is rented
     event CarRented(string plateNumber, address renter);
-
-    /// @notice Event emitted when a car is returned
     event CarReturned(string plateNumber, address renter);
 }
+
+
 
 
 

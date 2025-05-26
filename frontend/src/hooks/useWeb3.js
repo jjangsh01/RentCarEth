@@ -1,3 +1,4 @@
+// src/components/useWeb3.js
 import { ethers } from "ethers";
 import { useState, useEffect } from "react";
 import KYCManagerABI from "../abi/KYCManager.json";
@@ -15,7 +16,7 @@ export const useWeb3 = (triggerConnect = false) => {
 
     const connect = async () => {
       setLoading(true);
-
+      
       try {
         if (!window.ethereum) {
           console.error("🦊 MetaMask가 설치되어 있지 않습니다.");
@@ -23,11 +24,11 @@ export const useWeb3 = (triggerConnect = false) => {
         }
 
         const desiredChainId = "0xaa36a7"; // Sepolia
-        const provider = new ethers.BrowserProvider(window.ethereum);
+        const _provider = new ethers.BrowserProvider(window.ethereum);
         await window.ethereum.request({ method: "eth_requestAccounts" });
-
-        const signer = await provider.getSigner();
-        const account = await signer.getAddress();
+        
+        const _signer = await _provider.getSigner();
+        const _account = await _signer.getAddress();
         const currentChainId = await window.ethereum.request({ method: "eth_chainId" });
 
         if (currentChainId !== desiredChainId) {
@@ -66,15 +67,36 @@ export const useWeb3 = (triggerConnect = false) => {
           return;
         }
 
-        const kycContract = new ethers.Contract(kycAddress, KYCManagerABI.abi, signer);
-        const isAdmin = adminAddress && account.toLowerCase() === adminAddress;
-        const kycStatus = await kycContract.checkKYC(account);
+        const kycContract = new ethers.Contract(kycAddress, KYCManagerABI.abi, _signer);
+        const kycStatus = await kycContract.checkKYC(_account);
+        const isAdmin = _account.toLowerCase() === adminAddress;
 
-        setProvider(provider);
-        setSigner(signer);
-        setAccount(account);
+        setProvider(_provider);
+        setSigner(_signer);
+        setAccount(_account);
         setIsAdmin(isAdmin);
         setIsKYCApproved(kycStatus);
+
+        // 🌐 지갑 변경 감지 핸들러 등록
+        window.ethereum.on("accountsChanged", async (accounts) => {
+          if (accounts.length > 0) {
+            const changedSigner = await _provider.getSigner();
+            const changedAccount = await changedSigner.getAddress();
+            const updatedKycStatus = await kycContract.checkKYC(changedAccount);
+            const isNowAdmin = changedAccount.toLowerCase() === adminAddress;
+
+            setAccount(changedAccount);
+            setSigner(changedSigner);
+            setIsKYCApproved(updatedKycStatus);
+            setIsAdmin(isNowAdmin);
+
+            console.log("🔄 지갑 변경됨:", changedAccount);
+          } else {
+            setAccount(null);
+            setSigner(null);
+            console.log("❌ 계정 연결 해제됨");
+          }
+        });
       } catch (err) {
         console.error("❌ MetaMask 연결 오류:", err);
       } finally {
@@ -88,7 +110,8 @@ export const useWeb3 = (triggerConnect = false) => {
   return { provider, signer, account, isKYCApproved, isAdmin, loading };
 };
 
-export default useWeb3;
+export default useWeb3;  
+
 
 
 
