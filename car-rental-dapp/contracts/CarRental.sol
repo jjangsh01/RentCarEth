@@ -17,17 +17,19 @@ contract CarRental {
     IKYCManager public immutable kycManager;
     IRentalVault public immutable vault;
 
+    uint256 public constant DEPOSIT_MULTIPLIER = 2;
+
     mapping(bytes32 => uint256) public deposits;
 
-    // 새롭게 추가된 구조체
     struct RentalInfo {
         address renter;
         uint256 amountPaid;
+        uint256 rentalFee;
+        uint256 depositAmount;
         uint256 timestamp;
         bool returned;
     }
 
-    // 차량 번호판 → 렌탈정보 매핑
     mapping(string => RentalInfo) public rentalRecords;
 
     constructor(
@@ -57,22 +59,35 @@ contract CarRental {
 
         require(bytes(carPlate).length != 0, "Car not found");
         require(status == uint8(ICarRegistry.CarStatus.Available), "Car is not available");
-        require(msg.value >= pricePerDay, "Insufficient payment");
 
-        deposits[carId] = msg.value;
+        uint256 rentalFee = pricePerDay;
+        uint256 depositAmount = rentalFee * DEPOSIT_MULTIPLIER;
+        uint256 totalRequired = rentalFee + depositAmount;
 
-        // 렌탈 정보 기록
+        require(msg.value >= totalRequired, "Insufficient payment");
+
+        // 대여료 즉시 차량 소유자에게 송금
+        (bool sent, ) = payable(owner).call{value: rentalFee}("");
+        require(sent, "Transfer to owner failed");
+
+        // 보증금은 vault로 전송
+        vault.deposit{value: depositAmount}();
+
+        // 보증금 기록 (환불용)
+        deposits[carId] = depositAmount;
+
         rentalRecords[plateNumber] = RentalInfo({
             renter: msg.sender,
             amountPaid: msg.value,
+            rentalFee: rentalFee,
+            depositAmount: depositAmount,
             timestamp: block.timestamp,
             returned: false
         });
 
         carRegistry.setCarRented(plateNumber, msg.sender);
-        vault.deposit{value: msg.value}();
 
-        emit CarRented(plateNumber, msg.sender);
+        emit CarRented(plateNumber, msg.sender, rentalFee, depositAmount);
     }
 
     function completeRental(string memory plateNumber) external {
@@ -92,14 +107,16 @@ contract CarRental {
 
         carRegistry.setCarAvailable(plateNumber);
 
-        uint256 deposit = deposits[carId];
+        uint256 depositToRefund = deposits[carId];
         deposits[carId] = 0;
-        vault.refund(renter, deposit);
 
-        // 상태 업데이트
+        if (depositToRefund > 0) {
+            vault.refund(renter, depositToRefund);
+        }
+
         rentalRecords[plateNumber].returned = true;
 
-        emit CarReturned(plateNumber, renter);
+        emit CarReturned(plateNumber, renter, depositToRefund);
     }
 
     function getDeposit(string memory plateNumber) external view returns (uint256) {
@@ -107,7 +124,6 @@ contract CarRental {
         return deposits[carId];
     }
 
-    // 조회 함수
     function getRentalInfo(string memory plateNumber)
         external
         view
@@ -117,12 +133,33 @@ contract CarRental {
         return (info.renter, info.amountPaid, info.timestamp, info.returned);
     }
 
-    event CarRented(string plateNumber, address renter);
-    event CarReturned(string plateNumber, address renter);
+    function getDetailedRentalInfo(string memory plateNumber)
+        external
+        view
+        returns (
+            address renter,
+            uint256 totalPaid,
+            uint256 rentalFee,
+            uint256 depositAmount,
+            uint256 timestamp,
+            bool returned
+        )
+    {
+        RentalInfo memory info = rentalRecords[plateNumber];
+        return (
+            info.renter,
+            info.amountPaid,
+            info.rentalFee,
+            info.depositAmount,
+            info.timestamp,
+            info.returned
+        );
+    }
+
+    function getDepositMultiplier() external pure returns (uint256) {
+        return DEPOSIT_MULTIPLIER;
+    }
+
+    event CarRented(string plateNumber, address renter, uint256 rentalFee, uint256 deposit);
+    event CarReturned(string plateNumber, address renter, uint256 refundedDeposit);
 }
-
-
-
-
-
-
