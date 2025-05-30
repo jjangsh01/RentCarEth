@@ -17,6 +17,7 @@ const OwnerPage = () => {
   const [refreshSignal, setRefreshSignal] = useState(0);
   const [myCars, setMyCars] = useState([]);
   const [selectedTab, setSelectedTab] = useState("add"); // "add" | "list" | "rented"
+  const [borrowedCount, setBorrowedCount] = useState(0);
 
   const handleCarChange = () => setRefreshSignal((prev) => prev + 1);
 
@@ -51,8 +52,39 @@ const OwnerPage = () => {
     }
   };
 
+  const loadBorrowedCars = async () => {
+  if (!signer || !account) return;
+  try {
+    const contract = new ethers.Contract(
+      import.meta.env.VITE_CONTRACT_REGISTRY,
+      CarRegistryABI.abi,
+      signer
+    );
+    const plates = await contract.getCarPlates();
+    let count = 0;
+
+    for (const plate of plates) {
+      const [, , , , statusBN, renter] = await contract.getCar(plate);
+      const status = Number(statusBN);
+
+      if (
+        status === 1 &&
+        renter.toLowerCase() === account.toLowerCase()
+      ) {
+      count += 1;
+}
+    }
+    setBorrowedCount(count);
+  } catch (err) {
+    console.error("❌ 내가 빌린 차량 개수 조회 실패:", err);
+    }
+  };
+
   useEffect(() => {
-    if (!loading && signer && account) loadMyCars();
+    if (!loading && signer && account) {
+      loadMyCars();
+      loadBorrowedCars();
+    }
   }, [signer, account, refreshSignal]);
 
   if (loading)
@@ -64,6 +96,7 @@ const OwnerPage = () => {
 
   const totalCars = myCars.length;
   const rentedCars = myCars.filter((c) => c.status === 1).length;
+  const lentCount = myCars.filter(c => c.status === 1).length;
 
 
   return (
@@ -223,9 +256,9 @@ const OwnerPage = () => {
                     <p className="font-semibold">대여 현황</p>
                     <p className="text-xs opacity-70">진행 중인 대여</p>
                   </div>
-                  {rentedCars > 0 && (
+                  {borrowedCount > 0 && (
                     <div className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold animate-pulse">
-                      {rentedCars}
+                      {borrowedCount}
                     </div>
                   )}
                   {selectedTab === "rented" && (
@@ -295,7 +328,7 @@ const OwnerPage = () => {
                     />
                   )}
                   {selectedTab === "rented" && (
-                    <MyRentedCars signer={signer} account={account} />
+                    <MyRentedCars signer={signer} account={account} onCountChange={setBorrowedCount}/>
                   )}
                 </div>
               </div>
