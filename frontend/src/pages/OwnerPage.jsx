@@ -10,6 +10,7 @@ import CarRegistryABI from "../abi/CarRegistry.json";
 import dollarIcon from '../assets/dollar.png';
 import rentIcon from '../assets/rent.png';
 import backIcon from '../assets/back.png';
+import CarRentalABI from '../abi/CarRental.json';
 
 const OwnerPage = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const OwnerPage = () => {
   const [myCars, setMyCars] = useState([]);
   const [selectedTab, setSelectedTab] = useState("add"); // "add" | "list" | "rented"
   const [borrowedCount, setBorrowedCount] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState("0");
 
   const handleCarChange = () => setRefreshSignal((prev) => prev + 1);
 
@@ -52,6 +54,17 @@ const OwnerPage = () => {
     }
   };
 
+  const loadRevenue = async () => {
+        if (!signer || !account) return;
+        try {
+            const contract = new ethers.Contract(import.meta.env.VITE_CONTRACT_RENTAL, CarRentalABI.abi, signer);
+            const revenue = await contract.getOwnerRevenue(account);
+            setTotalRevenue(ethers.formatEther(revenue));
+        } catch (err) {
+            console.error("❌ 총 수익 불러오기 실패:", err);
+        }
+    };
+
   const loadBorrowedCars = async () => {
   if (!signer || !account) return;
   try {
@@ -84,6 +97,7 @@ const OwnerPage = () => {
     if (!loading && signer && account) {
       loadMyCars();
       loadBorrowedCars();
+      loadRevenue(); // 🚀 수익 정보도 함께 불러옴
     }
   }, [signer, account, refreshSignal]);
 
@@ -162,7 +176,7 @@ const OwnerPage = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-purple-200 text-sm font-medium">총 수익</p>
-                        <p className="text-3xl font-bold text-purple-400">-</p>
+                        <p className="text-3xl font-bold text-purple-400">{totalRevenue}</p>
                         <p className="text-xs text-purple-300">ETH</p>
                       </div>
                       <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">

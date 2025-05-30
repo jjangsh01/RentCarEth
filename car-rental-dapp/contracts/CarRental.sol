@@ -160,6 +160,12 @@ contract CarRental {
         return DEPOSIT_MULTIPLIER;
     }
 
+    function getOwnerRevenue(address owner) external view returns (uint256) {
+    return ownerRevenue[owner];
+    }
+
+    mapping(address => uint256) public ownerRevenue;
+
     event CarRented(string plateNumber, address renter, uint256 rentalFee, uint256 deposit);
     event CarReturned(string plateNumber, address renter, uint256 refundedDeposit);
 }
