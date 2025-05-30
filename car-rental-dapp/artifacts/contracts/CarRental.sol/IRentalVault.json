@@ -1,0 +1,36 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IRentalVault",
+  "sourceName": "contracts/CarRental.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "deposit",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "refund",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
