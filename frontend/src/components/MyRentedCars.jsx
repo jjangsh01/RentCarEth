@@ -6,11 +6,7 @@ import CarRentalABI from "../abi/CarRental.json";
 import RentalInfoModal from "./RentalInfoModal";
 import locationIcon from '../assets/location.png';
 
-<<<<<<< HEAD
 const MyRentedCars = ({ signer, account, onCountChange = () => {} }) => {
-=======
-const MyRentedCars = ({ signer, account }) => {
->>>>>>> jin
   const [cars, setCars] = useState([]);
   const [selectedRental, setSelectedRental] = useState(null);
   const [msg, setMsg] = useState("");
@@ -50,10 +46,7 @@ const MyRentedCars = ({ signer, account }) => {
       }
 
       setCars(results);
-<<<<<<< HEAD
       onCountChange(results.length);
-=======
->>>>>>> jin
     } catch (err) {
       console.error("❌ 렌트 차량 목록 불러오기 실패:", err);
     }
