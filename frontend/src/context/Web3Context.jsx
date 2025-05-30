@@ -23,10 +23,10 @@ export const Web3Provider = ({ children }) => {
     setIsAdmin(false);
     setProvider(null);
     setLoading(false);
-    
-    };
+  };
 
-  const connect = useCallback(async () => {
+  // 📌 지갑 연결 함수 (useCallback 제거)
+  const connect = async () => {
     try {
       if (!window.ethereum) {
         console.warn("🦊 MetaMask 미설치");
@@ -65,18 +65,17 @@ export const Web3Provider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  // 최초 연결
+  // 최초 앱 진입 시 자동 연결
   useEffect(() => {
     connect();
-  }, [connect]);
+  }, []);
 
-  // ✅ 지갑 계정 변경 감지 처리
+  // 계정 변경 감지
   useEffect(() => {
     const handleAccountsChanged = async (accounts) => {
       if (accounts.length === 0) {
-        // 지갑 해제됨
         setAccount(null);
         setSigner(null);
         setIsKYCApproved(false);
@@ -85,7 +84,7 @@ export const Web3Provider = ({ children }) => {
       } else {
         console.log("🔄 계정 변경됨:", accounts[0]);
         setLoading(true);
-        await connect(); // 다시 연결
+        await connect();
       }
     };
 
@@ -98,7 +97,7 @@ export const Web3Provider = ({ children }) => {
         window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
       }
     };
-  }, [connect]);
+  }, []);
 
   return (
     <Web3Context.Provider
@@ -109,7 +108,8 @@ export const Web3Provider = ({ children }) => {
         isKYCApproved,
         isAdmin,
         loading,
-        disconnect
+        disconnect,
+        connect,
       }}
     >
       {children}
@@ -118,5 +118,4 @@ export const Web3Provider = ({ children }) => {
 };
 
 export const useWeb3 = () => useContext(Web3Context);
-
 

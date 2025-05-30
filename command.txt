@@ -1,5 +1,5 @@
 //sol계약 배포
-cd car-renatl-dapp
+cd car-rental-dapp
 npx hardhat run scripts/deploy.js --network sepolia
 
 // frontend 실행 

@@ -26,10 +26,17 @@ contract CarRental {
         uint256 amountPaid;
         uint256 rentalFee;
         uint256 depositAmount;
+    mapping(bytes32 => uint256) public deposits;
+
+    // 새롭게 추가된 구조체
+    struct RentalInfo {
+        address renter;
+        uint256 amountPaid;
         uint256 timestamp;
         bool returned;
     }
 
+    // 차량 번호판 → 렌탈정보 매핑
     mapping(string => RentalInfo) public rentalRecords;
 
     constructor(
