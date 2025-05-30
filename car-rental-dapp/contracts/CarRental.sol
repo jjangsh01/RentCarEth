@@ -69,6 +69,8 @@ contract CarRental {
         // 대여료 즉시 차량 소유자에게 송금
         (bool sent, ) = payable(owner).call{value: rentalFee}("");
         require(sent, "Transfer to owner failed");
+        
+        ownerRevenue[owner] += pricePerDay;
 
         // 보증금은 vault로 전송
         vault.deposit{value: depositAmount}();
