@@ -189,7 +189,7 @@ const OwnerPage = () => {
                     <span className="text-lg">🚘</span>
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="font-semibold">등록 차량</p>
+                    <p className="font-semibold">등록 차량 관리</p>
                     <p className="text-xs opacity-70">차량 관리 및 수정</p>
                   </div>
                   {totalCars > 0 && (
