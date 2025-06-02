@@ -66,6 +66,7 @@ contract CarRental {
 
         require(msg.value >= totalRequired, "Insufficient payment");
 
+        ownerRevenue[owner] += pricePerDay;
         // 대여료 즉시 차량 소유자에게 송금
         (bool sent, ) = payable(owner).call{value: rentalFee}("");
         require(sent, "Transfer to owner failed");

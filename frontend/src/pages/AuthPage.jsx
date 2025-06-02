@@ -1,14 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-
 import WalletLoginModal from "../components/WalletLoginModal";
-import RegisterModal from "../components/RegisterModal";
-import LoginModal from "../components/LoginModal";
 
 const AuthPage = () => {
   const [showWalletModal, setShowWalletModal] = useState(false);
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-4 relative overflow-hidden">
@@ -37,40 +31,7 @@ const AuthPage = () => {
         {/* Glass card */}
         <div className="backdrop-blur-lg bg-white/10 border border-white/20 rounded-3xl p-8 shadow-2xl animate-fade-in-up">
           <div className="space-y-4">
-            <button 
-              className="w-full group relative overflow-hidden bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-4 px-6 rounded-2xl transform hover:scale-[1.02] transition-all duration-300 shadow-xl hover:shadow-2xl"
-              onClick={() => setShowLogin(true)}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative flex items-center justify-center space-x-3">
-                <span className="text-xl">🔐</span>
-                <span>일반 로그인</span>
-              </div>
-            </button>
-
-            {/* 회원가입 */}
-            <button 
-              onClick={() => setShowRegisterModal(true)}
-              className="w-full group relative overflow-hidden bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold py-4 px-6 rounded-2xl transform hover:scale-[1.02] transition-all duration-300 shadow-xl hover:shadow-2xl"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-gray-400 to-gray-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative flex items-center justify-center space-x-3">
-                <span className="text-xl">📝</span>
-                <span>회원가입</span>
-              </div>
-            </button>
-
-            {/* 구분선 */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/20"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-transparent text-purple-200 font-medium">또는</span>
-              </div>
-            </div>
-
-            {/* MetaMask 버튼 */}
+            {/* MetaMask 버튼만 유지 */}
             <button
               onClick={() => setShowWalletModal(true)}
               className="w-full group relative overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-4 px-6 rounded-2xl transform hover:scale-[1.02] transition-all duration-300 shadow-xl hover:shadow-2xl"
@@ -113,15 +74,9 @@ const AuthPage = () => {
         </div>
       </div>
 
-      {/* 모달들 */}
+      {/* 모달 */}
       {showWalletModal && (
         <WalletLoginModal onClose={() => setShowWalletModal(false)} />
-      )}
-      {showRegisterModal && (
-        <RegisterModal onClose={() => setShowRegisterModal(false)} />
-      )}
-      {showLogin && (
-        <LoginModal onClose={() => setShowLogin(false)} />
       )}
 
       <style jsx>{`
